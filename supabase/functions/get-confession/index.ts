@@ -118,18 +118,50 @@ export default {
           );
         }
 
+        const {
+          data: responseData,
+          error: responseError,
+        } = await ctx.supabaseAdmin
+          .from("confession_responses")
+          .select(`
+            response,
+            reason,
+            created_at
+          `)
+          .eq("confession_id", data.id)
+          .maybeSingle();
+
+        if (responseError) {
+          console.error(responseError);
+
+          return Response.json(
+            {
+              error:
+                "Failed to fetch confession response.",
+            },
+            {
+              status: 500,
+              headers: corsHeaders,
+            },
+          );
+        }
+
         return Response.json(
           {
             confession: {
               id: data.id,
               cuid: data.cuid,
-              senderName:
-                data.sender_name,
-              recipientName:
-                data.recipient_name,
+              senderName: data.sender_name,
+              recipientName: data.recipient_name,
               message: data.message,
-              createdAt:
-                data.created_at,
+              createdAt: data.created_at,
+              response: responseData
+                ? {
+                  response: responseData.response,
+                  reason: responseData.reason,
+                  createdAt: responseData.created_at,
+                }
+                : null,
             },
           },
           {

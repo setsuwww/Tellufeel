@@ -1,6 +1,11 @@
 <script setup>
+import { Heart } from '@lucide/vue'
 import { onMounted, ref } from "vue";
 import { useRoute } from "vue-router";
+
+import RecipientLoading from "@/components/RecipientLoading.vue";
+import RecipientIntro from "@/components/RecipientIntro.vue";
+import RecipientLetter from "@/components/RecipientLetter.vue";
 
 import { getConfession } from "@/services/recipient.service";
 import { respondConfession } from "@/services/response.service";
@@ -10,13 +15,11 @@ const route = useRoute();
 const confession = ref(null);
 
 const loading = ref(true);
+const showIntro = ref(false);
+const showLetter = ref(false);
+
 const submitting = ref(false);
-
 const error = ref("");
-const success = ref("");
-
-const showReasonForm = ref(false);
-const reason = ref("");
 
 const cuid = route.params.cuid;
 const token = route.query.token;
@@ -26,41 +29,24 @@ async function loadConfession() {
     error.value = "";
 
     try {
-        if (
-            typeof cuid !== "string" ||
-            typeof token !== "string"
-        ) {
-            throw new Error(
-                "Link confess tidak valid.",
-            );
+        if (typeof cuid !== "string" || typeof token !== "string") {
+            throw new Error("Link confess tidak valid.");
         }
 
-        confession.value = await getConfession({
-            cuid,
-            token,
-        });
-    } catch (err) {
-        console.error(err);
+        confession.value = await getConfession({ cuid, token });
 
-        error.value =
-            err.message ||
-            "Gagal mengambil confess.";
-    } finally {
-        loading.value = false;
+        showIntro.value = true;
     }
+    catch (err) { error.value = "Link confess tidak valid atau sudah tidak tersedia." }
+    finally { loading.value = false }
+}
+
+function handleIntroComplete() {
+    showIntro.value = false;
+    showLetter.value = true;
 }
 
 async function handleResponse(response) {
-    if (response === "NGGA_MAU") {
-        showReasonForm.value = true;
-        success.value = "";
-        return;
-    }
-
-    await submitResponse("MAU");
-}
-
-async function submitResponse(response) {
     submitting.value = true;
     error.value = "";
 
@@ -69,117 +55,73 @@ async function submitResponse(response) {
             cuid,
             token,
             response,
-            reason:
-                response === "NGGA_MAU"
-                    ? reason.value.trim()
-                    : null,
+            reason: null,
         });
 
-        success.value =
-            response === "MAU"
-                ? "Jawaban kamu sudah dikirim."
-                : "Jawaban dan alasan kamu sudah dikirim.";
-
-        showReasonForm.value = false;
-    } catch (err) {
-        console.error(err);
-
-        error.value =
-            err.message ||
-            "Gagal mengirim jawaban.";
-    } finally {
-        submitting.value = false;
+        confession.value.response = { response, reason: null };
     }
+    catch (err) { error.value = "Gagal mengirim jawaban. Silakan coba lagi." }
+    finally { submitting.value = false }
 }
 
-async function handleReject() {
-    if (!reason.value.trim()) {
-        error.value =
-            "Alasan wajib diisi.";
+async function handleReject(reason) {
+    submitting.value = true;
+    error.value = "";
 
-        return;
+    try {
+        await respondConfession({
+            cuid,
+            token,
+            response: "NGGA_MAU",
+            reason,
+        });
+
+        confession.value.response = {
+            response: "NGGA_MAU",
+            reason,
+        };
     }
-
-    await submitResponse("NGGA_MAU");
+    catch (err) { error.value = "Gagal mengirim jawaban. Silakan coba lagi." }
+    finally { submitting.value = false }
 }
 
-onMounted(() => {
-    loadConfession();
-});
+onMounted(loadConfession);
 </script>
 
 <template>
-    <main>
-        <div v-if="loading">
-            Membuka kotak surat...
+    <main
+        class="relative min-h-screen overflow-hidden bg-linear-to-b from-slate-950 via-slate-900 to-rose-950 text-slate-50">
+        <!-- Background -->
+        <div class="pointer-events-none fixed inset-0">
+            <div
+                class="absolute left-1/2 top-1/2 h-96 w-96 -translate-x-1/2 -translate-y-1/2 rounded-full bg-pink-500/5 blur-3xl" />
         </div>
 
-        <div v-else-if="error && !confession">
-            <h1>Confess tidak ditemukan</h1>
+        <!-- Loading -->
+        <RecipientLoading v-if="loading" />
 
-            <p>
-                {{ error }}
-            </p>
-        </div>
+        <!-- Error -->
+        <div v-else-if="error && !confession" class="relative flex min-h-screen items-center justify-center px-5">
+            <div class="w-full max-w-md rounded-md border border-slate-800 bg-slate-900 p-8 text-center">
+                <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-pink-500/20">
+                    <Heart />
+                </div>
 
-        <div v-else-if="confession">
-            <p>
-                Dari:
-                {{ confession.senderName }}
-            </p>
+                <h1 class="mt-5 font-serif text-3xl font-semibold text-slate-50">
+                    Confess tidak ditemukan
+                </h1>
 
-            <p>
-                Untuk:
-                {{ confession.recipientName }}
-            </p>
-
-            <p>
-                {{ confession.message }}
-            </p>
-
-            <div v-if="!success">
-                <button
-                    type="button"
-                    :disabled="submitting"
-                    @click="handleResponse('MAU')"
-                >
-                    Mau
-                </button>
-
-                <button
-                    type="button"
-                    :disabled="submitting"
-                    @click="handleResponse('NGGA_MAU')"
-                >
-                    Ngga Mau
-                </button>
+                <p class="mt-3 font-sans text-sm leading-6 text-slate-500">
+                    {{ error }}
+                </p>
             </div>
-
-            <form
-                v-if="showReasonForm && !success"
-                @submit.prevent="handleReject"
-            >
-                <textarea
-                    v-model="reason"
-                    placeholder="Kenapa?"
-                    :disabled="submitting"
-                />
-
-                <button
-                    type="submit"
-                    :disabled="submitting"
-                >
-                    Kirim alasan
-                </button>
-            </form>
-
-            <p v-if="error">
-                {{ error }}
-            </p>
-
-            <p v-if="success">
-                {{ success }}
-            </p>
         </div>
+
+        <!-- Intro -->
+        <RecipientIntro v-else-if="showIntro" @complete="handleIntroComplete" />
+
+        <!-- Letter -->
+        <RecipientLetter v-else-if="showLetter" :confession="confession" :submitting="submitting" :error="error"
+            @respond="handleResponse" @reject="handleReject" />
     </main>
 </template>
