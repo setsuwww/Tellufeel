@@ -57,6 +57,16 @@ export default {
           );
         }
 
+        if (cuid.length > 100 || token.length > 128) {
+          return Response.json(
+            { error: "Invalid request." },
+            {
+              status: 400,
+              headers: corsHeaders,
+            },
+          );
+        }
+
         const tokenHash =
           await hashToken(token);
 

@@ -5,7 +5,14 @@ import { hashToken } from "@/utils/hash";
 export async function getMyConfessions() {
     const { data, error } = await supabase
         .from("confessions")
-        .select("*")
+        .select(`
+            id,
+            cuid,
+            sender_name,
+            recipient_name,
+            message,
+            created_at
+        `)
         .order("created_at", {
             ascending: false,
         });
@@ -47,14 +54,13 @@ export async function createConfession({
         .insert({
             creator_id: user.id,
             cuid,
-            sender_name: senderName,
-            recipient_name: recipientName,
-            message,
-
+            sender_name: senderName.trim(),
+            recipient_name: recipientName.trim(),
+            message: message.trim(),
             creator_token_hash: creatorTokenHash,
             recipient_token_hash: recipientTokenHash,
         })
-        .select()
+        .select("id, cuid, sender_name, recipient_name, message, created_at")
         .single();
 
     if (error) {

@@ -58,6 +58,20 @@ export default {
         }
 
         if (
+          cuid.length > 100 ||
+          token.length > 128 ||
+          reason?.length > 1000
+        ) {
+          return Response.json(
+            { error: "Invalid request." },
+            {
+              status: 400,
+              headers: corsHeaders,
+            },
+          );
+        }
+
+        if (
           !cuid.trim() ||
           !token.trim()
         ) {
