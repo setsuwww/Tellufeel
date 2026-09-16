@@ -16,17 +16,20 @@ onMounted(() => {
 </script>
 
 <template>
-    <div class="flex min-h-screen items-center justify-center">
-        <div class="text-center">
-            <div ref="heart" class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-pink-500/10">
-                <span class="font-serif text-3xl text-pink-400">
-                    ♡
-                </span>
-            </div>
+  <div class="flex min-h-screen items-center justify-center">
+    <div class="text-center">
+      <div
+        ref="heart"
+        class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-pink-500/10"
+      >
+        <span class="font-serif text-3xl text-pink-400">
+          ♡
+        </span>
+      </div>
 
-            <p class="mt-5 font-sans text-sm text-slate-500">
-                Membuka sesuatu...
-            </p>
-        </div>
+      <p class="mt-5 font-sans text-sm text-slate-500">
+        Membuka sesuatu...
+      </p>
     </div>
+  </div>
 </template>

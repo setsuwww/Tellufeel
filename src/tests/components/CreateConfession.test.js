@@ -4,7 +4,6 @@ import {
     it,
     vi,
     beforeEach,
-    afterEach,
 } from "vitest";
 import { mount } from "@vue/test-utils";
 
@@ -124,7 +123,7 @@ describe("CreateConfessionView", () => {
             .trigger("submit");
 
         expect(wrapper.text()).toContain(
-            "Confess berhasil dibuat.",
+            "Confess kamu siap.",
         );
     });
 

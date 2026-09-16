@@ -27,7 +27,9 @@ export async function respondConfession({
             if (body?.error) {
                 message = body.error;
             }
-        } catch { }
+        } catch {
+            // Empty catch for Lint
+        }
 
         throw new Error(message);
     }
